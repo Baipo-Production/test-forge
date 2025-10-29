@@ -1,0 +1,33 @@
+name: Run Robot Test by Name (Python 3.14)
+
+on:
+  workflow_dispatch:
+    inputs:
+      testName:
+        description: "ชื่อโฟลเดอร์ testName ใน workspace/"
+        required: true
+        type: string
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.14.0
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install robotframework robotframework-requests robotframework-jsonlibrary
+
+      - name: Run Robot test by testName
+        run: |
+          cd workspace/${{ github.event.inputs.testName }}/generated
+          mkdir -p ../Report/$(date +%Y%m%d_%H%M%S)
+          robot --outputdir ../Report/$(date +%Y%m%d_%H%M%S) .

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.14.0 on win32)" generated="2025-10-29T22:25:04.077640" rpa="false" schemaversion="5">
+<suite id="s1" name="Generated" source="C:\Work\DevT\Capco\TestForge\workspace\test\generated">
+<suite id="s1-s1" name="TC 001" source="C:\Work\DevT\Capco\TestForge\workspace\test\generated\TC_001.robot">
+<kw name="Create Session" owner="RequestsLibrary" type="SETUP">
+<msg time="2025-10-29T22:25:04.504169" level="INFO">Creating Session using : alias=api, url=http://localhost, headers={},                     cookies={}, auth=None, timeout=None, proxies=None, verify=False,                     debug=0 </msg>
+<arg>api</arg>
+<arg>http://localhost</arg>
+<doc>Create Session: create a HTTP session to a server</doc>
+<status status="PASS" start="2025-10-29T22:25:04.503917" elapsed="0.000698"/>
+</kw>
+<test id="s1-s1-t1" name="TC_001" line="8">
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2025-10-29T22:25:04.505354" elapsed="0.000134"/>
+</kw>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2025-10-29T22:25:04.505605" elapsed="0.000084"/>
+</kw>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2025-10-29T22:25:04.505775" elapsed="0.000075"/>
+</kw>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2025-10-29T22:25:04.505932" elapsed="0.000074"/>
+</kw>
+<kw name="GET On Session" owner="RequestsLibrary">
+<msg time="2025-10-29T22:25:04.506829" level="FAIL">Variable '${query}' not found.</msg>
+<var>${resp}</var>
+<arg>api</arg>
+<arg>http://mockoon.ariyanaragroup.com/api/v1/public/home</arg>
+<arg>params=${query}</arg>
+<arg>headers=${headers}</arg>
+<arg>data=${payload}</arg>
+<doc>Sends a GET request on a previously created HTTP Session.</doc>
+<status status="FAIL" start="2025-10-29T22:25:04.506096" elapsed="0.000788">Variable '${query}' not found.</status>
+</kw>
+<kw name="Should Be Equal As Integers" owner="BuiltIn">
+<arg>${resp.status_code}</arg>
+<arg>200</arg>
+<doc>Fails if objects are unequal after converting them to integers.</doc>
+<status status="NOT RUN" start="2025-10-29T22:25:04.507013" elapsed="0.000023"/>
+</kw>
+<status status="FAIL" start="2025-10-29T22:25:04.504883" elapsed="0.002321">Variable '${query}' not found.</status>
+</test>
+<status status="FAIL" start="2025-10-29T22:25:04.111399" elapsed="0.396230"/>
+</suite>
+<status status="FAIL" start="2025-10-29T22:25:04.079221" elapsed="0.428932"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Generated" id="s1" pass="0" fail="1" skip="0">Generated</stat>
+<stat name="TC 001" id="s1-s1" pass="0" fail="1" skip="0">Generated.TC 001</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

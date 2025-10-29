@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.14.0 on win32)" generated="2025-10-29T22:34:51.251797" rpa="false" schemaversion="5">
+<suite id="s1" name="Generated" source="C:\Work\DevT\Capco\TestForge\workspace\test3\generated">
+<suite id="s1-s1" name="TC 001" source="C:\Work\DevT\Capco\TestForge\workspace\test3\generated\TC_001.robot">
+<kw name="Create Session" owner="RequestsLibrary" type="SETUP">
+<msg time="2025-10-29T22:34:51.446201" level="INFO">Creating Session using : alias=api, url=http://mockoon.ariyanaragroup.com, headers={},                     cookies={}, auth=None, timeout=None, proxies=None, verify=False,                     debug=0 </msg>
+<arg>api</arg>
+<arg>http://mockoon.ariyanaragroup.com</arg>
+<doc>Create Session: create a HTTP session to a server</doc>
+<status status="PASS" start="2025-10-29T22:34:51.445999" elapsed="0.000458"/>
+</kw>
+<test id="s1-s1-t1" name="TC_001" line="9">
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:51.447138" level="INFO">========== REQUEST ==========</msg>
+<arg>========== REQUEST ==========</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:51.446988" elapsed="0.000240"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:51.447495" level="INFO">Method: GET</msg>
+<arg>Method: GET</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:51.447362" elapsed="0.000201"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:51.447756" level="INFO">Endpoint: /api/v1/public/home</msg>
+<arg>Endpoint: /api/v1/public/home</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:51.447662" elapsed="0.000152"/>
+</kw>
+<kw name="GET On Session" owner="RequestsLibrary">
+<msg time="2025-10-29T22:34:52.236719" level="INFO">GET Request : url=http://mockoon.ariyanaragroup.com/api/v1/public/home (redirected) 
+ path_url=/api/v1/public/home 
+ headers={'User-Agent': 'python-requests/2.32.5', 'Accept-Encoding': 'gzip, deflate, zstd', 'Accept': '*/*', 'Connection': 'keep-alive'} 
+ body=None 
+ </msg>
+<msg time="2025-10-29T22:34:52.236841" level="INFO">GET Response : url=https://mockoon.ariyanaragroup.com/api/v1/public/home 
+ status=200, reason=OK 
+ headers={'Server': 'nginx/1.24.0 (Ubuntu)', 'Date': 'Wed, 29 Oct 2025 15:34:50 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': '7117', 'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Origin, Accept, Authorization, Content-Length, X-Requested-With'} 
+ body={
+  "status": 200,
+  "data": {
+    "why_choose_items": [
+      {
+        "id": "why-001",
+        "title": "Quality First",
+        "description": "We prioritize quality in every project we undertake.",
+        "icon_url": "fa-home",
+        "display_order": 1,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "why-002",
+        "title": "Sustainable Living",
+        "description": "Eco-friendly and smart designs for modern lifestyles.",
+        "icon_url": "fa-medal",
+        "display_order": 2,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "why-003",
+        "title": "Expert Consultation",
+        "description": "Our team of experts provides personalized guidance throughout your journey.",
+        "icon_url": "fa-handshake",
+        "display_order": 2,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      }
+    ],
+    "highlighted_houses": [
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa1",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-001",
+          "code": "Luxury",
+          "name": "Luxury Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa2",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-002",
+          "code": "Premium",
+          "name": "Premium Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa3",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-003",
+          "code": "Popular",
+          "name": "Popular Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      }
+    ]
+  },
+  "message": "successfully",
+  "language": "en"
+} 
+ </msg>
+<msg time="2025-10-29T22:34:52.236957" level="INFO">c:\Work\DevT\Capco\TestForge\.venv\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'mockoon.ariyanaragroup.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(</msg>
+<msg time="2025-10-29T22:34:52.237101" level="INFO">${resp} = &lt;Response [200]&gt;</msg>
+<var>${resp}</var>
+<arg>api</arg>
+<arg>/api/v1/public/home</arg>
+<doc>Sends a GET request on a previously created HTTP Session.</doc>
+<status status="PASS" start="2025-10-29T22:34:51.447904" elapsed="0.789229"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:52.237413" level="INFO">========== RESPONSE ==========</msg>
+<arg>========== RESPONSE ==========</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:52.237273" elapsed="0.000194"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:52.237994" level="INFO">Status Code: 200</msg>
+<arg>Status Code: ${resp.status_code}</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:52.237535" elapsed="0.000513"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:52.238411" level="INFO">Response Headers: {'Server': 'nginx/1.24.0 (Ubuntu)', 'Date': 'Wed, 29 Oct 2025 15:34:50 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': '7117', 'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Origin, Accept, Authorization, Content-Length, X-Requested-With'}</msg>
+<arg>Response Headers: ${resp.headers}</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:52.238120" elapsed="0.000353"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-10-29T22:34:52.238893" level="INFO">Response Body: {
+  "status": 200,
+  "data": {
+    "why_choose_items": [
+      {
+        "id": "why-001",
+        "title": "Quality First",
+        "description": "We prioritize quality in every project we undertake.",
+        "icon_url": "fa-home",
+        "display_order": 1,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "why-002",
+        "title": "Sustainable Living",
+        "description": "Eco-friendly and smart designs for modern lifestyles.",
+        "icon_url": "fa-medal",
+        "display_order": 2,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "why-003",
+        "title": "Expert Consultation",
+        "description": "Our team of experts provides personalized guidance throughout your journey.",
+        "icon_url": "fa-handshake",
+        "display_order": 2,
+        "is_highlight": true,
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      }
+    ],
+    "highlighted_houses": [
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa1",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-001",
+          "code": "Luxury",
+          "name": "Luxury Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa2",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-002",
+          "code": "Premium",
+          "name": "Premium Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      },
+      {
+        "id": "house-001",
+        "title": "The Harmony Villa3",
+        "description": "A smart home with beautiful green surroundings.",
+        "location": "Bangkok, Thailand",
+        "price": 8500000,
+        "area": 220,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "year_built": 2024,
+        "property_type": "Detached House",
+        "status": "Available",
+        "is_featured": true,
+        "is_highlight": true,
+        "is_active": true,
+        "latitude": 13.7563,
+        "longitude": 100.5018,
+        "category_id": "category-001",
+        "category": {
+          "id": "category-003",
+          "code": "Popular",
+          "name": "Popular Homes",
+          "description": "High-end properties for premium living.",
+          "is_active": true,
+          "created_at": "2025-07-16T10:00:00.000Z",
+          "updated_at": "2025-07-16T10:00:00.000Z"
+        },
+        "images": [
+          {
+            "id": "img-001",
+            "house_id": "house-001",
+            "image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "alt_text": "The Harmony Villa - Front View",
+            "is_primary": true,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "plans": [
+          {
+            "id": "plan-001",
+            "house_id": "house-001",
+            "title": "Ground Floor Plan",
+            "description": "Living room, kitchen, and guest bedroom.",
+            "plan_image_url": "/assets/images/logo/ariyanara_logo_b.png",
+            "floor_number": 1,
+            "sort_order": 1,
+            "created_at": "2025-07-16T10:00:00.000Z",
+            "updated_at": "2025-07-16T10:00:00.000Z"
+          }
+        ],
+        "created_at": "2025-07-16T10:00:00.000Z",
+        "updated_at": "2025-07-16T10:00:00.000Z"
+      }
+    ]
+  },
+  "message": "successfully",
+  "language": "en"
+}</msg>
+<arg>Response Body: ${resp.text}</arg>
+<arg>console=yes</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-10-29T22:34:52.238542" elapsed="0.000614"/>
+</kw>
+<kw name="Should Be Equal As Integers" owner="BuiltIn">
+<msg time="2025-10-29T22:34:52.239617" level="INFO">Argument types are:
+&lt;class 'int'&gt;
+&lt;class 'str'&gt;</msg>
+<arg>${resp.status_code}</arg>
+<arg>200</arg>
+<doc>Fails if objects are unequal after converting them to integers.</doc>
+<status status="PASS" start="2025-10-29T22:34:52.239256" elapsed="0.000422"/>
+</kw>
+<status status="PASS" start="2025-10-29T22:34:51.446628" elapsed="0.793167"/>
+</test>
+<status status="PASS" start="2025-10-29T22:34:51.279468" elapsed="0.960701"/>
+</suite>
+<status status="PASS" start="2025-10-29T22:34:51.253543" elapsed="0.987004"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Generated" id="s1" pass="1" fail="0" skip="0">Generated</stat>
+<stat name="TC 001" id="s1-s1" pass="1" fail="0" skip="0">Generated.TC 001</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
