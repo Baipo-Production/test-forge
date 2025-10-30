@@ -5,6 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.14.0-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688.svg)](https://fastapi.tiangolo.com/)
 [![Robot Framework](https://img.shields.io/badge/Robot%20Framework-Latest-000000.svg)](https://robotframework.org/)
+[![API Integration Test](https://github.com/Baipo-Production/test-forge/actions/workflows/api-integration-test.yml/badge.svg)](https://github.com/Baipo-Production/test-forge/actions/workflows/api-integration-test.yml)
 
 ---
 
@@ -23,6 +24,7 @@
   - [Docker Mode](#docker-mode)
 - [API Endpoints](#-api-endpoints)
 - [Workflow](#-workflow)
+- [GitHub Actions Integration](#-github-actions-integration)
 - [Environment Variables](#-environment-variables)
 - [Testing](#-testing)
 - [Troubleshooting](#-troubleshooting)
@@ -764,6 +766,178 @@ TC_044
 ```
 
 The `expected_status=any` parameter ensures that RequestsLibrary does not raise an exception when the API returns error status codes (4xx, 5xx), allowing the test to proceed and validate the actual status code.
+
+---
+
+## 🤖 GitHub Actions Integration
+
+TestForge provides **comprehensive CI/CD integration** with GitHub Actions for automated testing workflows.
+
+### **📋 Available Workflows**
+
+#### **1. Full Integration Test** (Recommended)
+**File:** `.github/workflows/api-integration-test.yml`
+
+Complete end-to-end test pipeline covering all 5 actions:
+1. Download example template
+2. Generate test combinations
+3. Compile to Robot Framework
+4. Run tests with SSE streaming
+5. Download test reports
+
+**Triggers:**
+- ✅ Manual (workflow_dispatch)
+- ✅ Push to `master` (when `app/**` changes)
+- ✅ Pull requests to `master`
+
+**Quick Start:**
+```bash
+# Via GitHub CLI
+gh workflow run api-integration-test.yml \
+  -f testName=my-test-suite \
+  -f inputFile=data/custom-input.xlsx
+
+# Via GitHub UI
+# Actions → "TestForge API Integration Test" → Run workflow
+```
+
+**Inputs:**
+- `testName` (optional): Test suite name, default: `github-action-test`
+- `inputFile` (optional): Path to input file, default: uses example template
+
+**Artifacts:** All generated files, logs, and reports (30 days retention)
+
+---
+
+#### **2. Individual Action Workflows**
+
+For granular control, run each action separately:
+
+| Workflow | File | Purpose | Usage |
+|----------|------|---------|-------|
+| **Download Example** | `action-1-download-example.yml` | Get example template | `gh workflow run action-1-download-example.yml` |
+| **Generate Combinations** | `action-2-combination.yml` | Create test combinations | `gh workflow run action-2-combination.yml -f inputFile=data/input.xlsx` |
+| **Compile Tests** | `action-3-compile.yml` | Build Robot Framework tests | `gh workflow run action-3-compile.yml -f testName=suite -f inputFile=data/filled.xlsx` |
+| **Run Tests (Stream)** | `action-4-run-stream.yml` | Execute with SSE output | `gh workflow run action-4-run-stream.yml -f testName=suite` |
+| **Download Report** | `action-5-download-report.yml` | Get test reports | `gh workflow run action-5-download-report.yml -f testName=suite` |
+
+---
+
+### **🚀 Common Use Cases**
+
+#### **Example 1: Auto-Test on Push**
+```bash
+# Any push to master with changes in app/ triggers full integration test
+git add app/
+git commit -m "Update API logic"
+git push origin master
+
+# Workflow runs automatically with default settings
+# View results: https://github.com/{owner}/{repo}/actions
+```
+
+#### **Example 2: Manual Full Pipeline**
+```bash
+# Run complete test pipeline with custom inputs
+gh workflow run api-integration-test.yml \
+  -f testName=staging-smoke-test \
+  -f inputFile=data/staging-tests.xlsx
+
+# Monitor progress
+gh run watch
+
+# Download artifacts after completion
+gh run list --workflow=api-integration-test.yml --limit 1
+gh run download <RUN_ID>
+```
+
+#### **Example 3: Step-by-Step Testing**
+```bash
+# Step 1: Download template
+gh workflow run action-1-download-example.yml
+
+# Step 2: Generate combinations (after filling input file)
+gh workflow run action-2-combination.yml -f inputFile=data/my-tests.xlsx
+
+# Step 3: Compile (after filling response columns)
+gh workflow run action-3-compile.yml \
+  -f testName=api-regression \
+  -f inputFile=data/filled-tests.xlsx
+
+# Step 4: Run tests
+gh workflow run action-4-run-stream.yml -f testName=api-regression
+
+# Step 5: Download report
+gh workflow run action-5-download-report.yml \
+  -f testName=api-regression \
+  -f timestamp=20251030_143022
+```
+
+---
+
+### **📊 Monitoring & Artifacts**
+
+**View Workflow Runs:**
+```bash
+# List recent runs
+gh run list --workflow=api-integration-test.yml
+
+# View specific run details
+gh run view <RUN_ID>
+
+# Download all artifacts
+gh run download <RUN_ID>
+```
+
+**Artifact Retention:**
+- Main integration test: **30 days**
+- Individual actions: **7-30 days** (varies by workflow)
+
+**Available Artifacts:**
+- Example templates (`.xlsx`)
+- Generated combinations (`.xlsx`)
+- Compiled test data (`.xlsx`)
+- Robot Framework test files (`.robot`)
+- Execution logs (`.log`)
+- Test reports (`.zip` with HTML/XML)
+- Server logs (`.log`)
+
+---
+
+### **🔍 Troubleshooting GitHub Actions**
+
+#### **Server fails to start**
+- Check `server.log` in artifacts
+- Verify Python 3.14.0 compatibility
+- Review dependency installation logs
+
+#### **Health check timeout**
+- Increase timeout in workflow (default: 60s)
+- Check for port conflicts (port 3000)
+- Review server startup logs
+
+#### **File not found**
+- Ensure `inputFile` path is **relative to repo root**
+- Verify file exists in repository
+- Check Git LFS for large files
+
+#### **Compilation errors**
+- Validate input file format (CSV/XLSX)
+- Check required columns: `[API]`, `[Request]`, `[Response]`
+- Review `compile_response.json` in artifacts
+
+#### **Test execution fails**
+- Review SSE stream output (`sse_output.log`)
+- Check API endpoint accessibility from GitHub Actions runners
+- Verify test data format matches schema
+
+---
+
+### **📚 Detailed Documentation**
+
+For comprehensive GitHub Actions documentation, see:
+- **Workflow Guide:** [`.github/workflows/README.md`](.github/workflows/README.md)
+- **GitHub Actions Docs:** https://docs.github.com/en/actions
 
 ---
 

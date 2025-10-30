@@ -1,0 +1,97 @@
+name: Compile Test Cases
+
+on:
+  workflow_dispatch:
+    inputs:
+      testName:
+        description: 'Test suite name'
+        required: true
+        default: 'my-test-suite'
+      inputFile:
+        description: 'Path to filled test data file'
+        required: true
+        default: 'data/example_valid.csv'
+
+jobs:
+  compile-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.0'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Start TestForge API Server
+        run: |
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 3000 > server.log 2>&1 &
+          echo $! > server.pid
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: ⏳ Wait for server health check
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Server is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: 🔨 Compile Test Cases
+        id: compile
+        run: |
+          TEST_NAME="${{ github.event.inputs.testName }}"
+          INPUT_FILE="${{ github.event.inputs.inputFile }}"
+          
+          echo "Compiling test: $TEST_NAME"
+          echo "Using input file: $INPUT_FILE"
+          
+          RESPONSE=$(curl -v -X POST http://localhost:3000/api/v1/compile-test-case \
+            -F "testName=$TEST_NAME" \
+            -F "file=@$INPUT_FILE")
+          
+          echo "$RESPONSE" | tee compile_response.json
+          
+          STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
+          CASES=$(echo "$RESPONSE" | jq -r '.cases // 0')
+          
+          if [ "$STATUS" = "compiled" ]; then
+            echo "✅ Compiled $CASES test cases"
+            echo "cases=$CASES" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Compilation failed"
+            exit 1
+          fi
+
+      - name: 📤 Upload Compilation Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-tests-${{ github.event.inputs.testName }}
+          path: |
+            compile_response.json
+            workspace/${{ github.event.inputs.testName }}/generated/*.robot
+          retention-days: 30
+
+      - name: 📋 Summary
+        run: |
+          echo "✅ Compiled ${{ steps.compile.outputs.cases }} test cases"
+          echo "📁 Test Name: ${{ github.event.inputs.testName }}"
+
+      - name: 🛑 Stop Server
+        if: always()
+        run: |
+          [ -f server.pid ] && kill $(cat server.pid) 2>/dev/null || true
+          cat server.log

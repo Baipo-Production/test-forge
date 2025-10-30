@@ -1,0 +1,93 @@
+name: Download Test Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      testName:
+        description: 'Test suite name'
+        required: true
+        default: 'my-test-suite'
+      timestamp:
+        description: 'Report timestamp (optional, leave empty for latest)'
+        required: false
+        default: ''
+
+jobs:
+  download-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.0'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Start TestForge API Server
+        run: |
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 3000 > server.log 2>&1 &
+          echo $! > server.pid
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: ⏳ Wait for server health check
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Server is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: 📊 Download Test Report
+        run: |
+          TEST_NAME="${{ github.event.inputs.testName }}"
+          TIMESTAMP="${{ github.event.inputs.timestamp }}"
+          
+          if [ -n "$TIMESTAMP" ]; then
+            DOWNLOAD_URL="http://localhost:3000/api/v1/download/$TEST_NAME/$TIMESTAMP"
+            echo "Downloading specific report: $TIMESTAMP"
+          else
+            DOWNLOAD_URL="http://localhost:3000/api/v1/download/$TEST_NAME"
+            echo "Downloading latest report"
+          fi
+          
+          echo "URL: $DOWNLOAD_URL"
+          curl -v -OJ "$DOWNLOAD_URL"
+          
+          # List downloaded files
+          echo ""
+          echo "Downloaded files:"
+          ls -lh *.zip || echo "No ZIP files found"
+
+      - name: 📤 Upload Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.event.inputs.testName }}
+          path: "*.zip"
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: 📋 Summary
+        run: |
+          echo "📊 Test Name: ${{ github.event.inputs.testName }}"
+          echo "🕐 Timestamp: ${{ github.event.inputs.timestamp || 'latest' }}"
+          echo ""
+          echo "Report downloaded and available in artifacts"
+
+      - name: 🛑 Stop Server
+        if: always()
+        run: |
+          [ -f server.pid ] && kill $(cat server.pid) 2>/dev/null || true
+          cat server.log

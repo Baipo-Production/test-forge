@@ -1,0 +1,93 @@
+name: Run Test Stream
+
+on:
+  workflow_dispatch:
+    inputs:
+      testName:
+        description: 'Test suite name (must be already compiled)'
+        required: true
+        default: 'my-test-suite'
+
+jobs:
+  run-test-stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.0'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Start TestForge API Server
+        run: |
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 3000 > server.log 2>&1 &
+          echo $! > server.pid
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: ⏳ Wait for server health check
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Server is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: 🏃 Run Tests (SSE Stream)
+        id: run_tests
+        run: |
+          TEST_NAME="${{ github.event.inputs.testName }}"
+          STREAM_URL="http://localhost:3000/api/v1/run-test-case/$TEST_NAME/stream"
+          
+          echo "Streaming test execution from: $STREAM_URL"
+          echo ""
+          
+          # Stream SSE output and save to file
+          curl -N --no-buffer "$STREAM_URL" 2>&1 | tee sse_output.log
+          
+          # Extract timestamp from last event
+          TIMESTAMP=$(grep -o '"timestamp":"[^"]*"' sse_output.log | tail -1 | cut -d'"' -f4 || echo "")
+          
+          if [ -n "$TIMESTAMP" ]; then
+            echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+            echo ""
+            echo "✅ Tests completed with timestamp: $TIMESTAMP"
+          else
+            echo "timestamp=" >> $GITHUB_OUTPUT
+            echo "⚠️ Could not extract timestamp"
+          fi
+
+      - name: 📤 Upload SSE Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-stream-output-${{ github.event.inputs.testName }}
+          path: |
+            sse_output.log
+            server.log
+          retention-days: 14
+
+      - name: 📋 Summary
+        run: |
+          echo "🏃 Test Name: ${{ github.event.inputs.testName }}"
+          echo "🕐 Timestamp: ${{ steps.run_tests.outputs.timestamp || 'N/A' }}"
+          echo ""
+          echo "View full SSE output in artifacts"
+
+      - name: 🛑 Stop Server
+        if: always()
+        run: |
+          [ -f server.pid ] && kill $(cat server.pid) 2>/dev/null || true
