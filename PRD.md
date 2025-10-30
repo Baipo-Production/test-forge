@@ -299,7 +299,7 @@ And response time is < 10 seconds for up to 1000 combinations
        Log    Headers: ${headers}    console=yes
        ${payload}=    Create Dictionary    father=true    profile={"name": "best"}    children=[{"name": "god"}]
        Log    Body: ${payload}    console=yes
-       ${resp}=    POST On Session    api    /api/v1/read/1    params=${query}    headers=${headers}    json=${payload}
+       ${resp}=    POST On Session    api    /api/v1/read/1    params=${query}    headers=${headers}    json=${payload}    expected_status=any
        Log    ========== RESPONSE ==========    console=yes
        Log    Status Code: ${resp.status_code}    console=yes
        Log    Response Headers: ${resp.headers}    console=yes
@@ -320,6 +320,44 @@ And response time is < 10 seconds for up to 1000 combinations
       "run_url": "/api/v1/run-test-case/Check_Has_Data/stream"
     }
     ```
+
+**Special Feature: `expected_status=any` Parameter**
+
+To ensure tests can properly validate **all HTTP status codes** (including error codes like 400, 404, 500), the compile service automatically adds `expected_status=any` to every generated HTTP request keyword.
+
+**Why this is important:**
+- By default, RequestsLibrary raises an `HTTPError` exception when the API returns status codes >= 400
+- This would cause tests expecting error codes (e.g., testing negative scenarios) to **fail before reaching the assertion**
+- Adding `expected_status=any` tells RequestsLibrary to accept **any status code** without raising an exception
+- The test can then validate the actual status code using `Should Be Equal As Integers`
+
+**Example - Testing Expected Error Response:**
+```robot
+*** Test Cases ***
+TC_044_Invalid_Field_Values
+    ${headers}=    Create Dictionary    x-mock-status=400
+    ${payload}=    Create Dictionary    Gender=Female    Age=18-30
+    # expected_status=any allows the request to complete without raising HTTPError on 400 status
+    ${resp}=    POST On Session    api    /api/combination-data    headers=${headers}    json=${payload}    expected_status=any
+    # Now we can properly validate that we received the expected 400 status code
+    Should Be Equal As Integers    ${resp.status_code}    400
+```
+
+**Without `expected_status=any`:**
+```robot
+${resp}=    POST On Session    api    /api/combination-data    headers=${headers}    json=${payload}
+# ❌ Test fails here with HTTPError: 400 Client Error - never reaches assertion
+Should Be Equal As Integers    ${resp.status_code}    400
+```
+
+**With `expected_status=any`:**
+```robot
+${resp}=    POST On Session    api    /api/combination-data    headers=${headers}    json=${payload}    expected_status=any
+# ✅ Request completes, test can validate the status code
+Should Be Equal As Integers    ${resp.status_code}    400
+```
+
+This ensures **comprehensive test coverage** for both success (2xx) and error (4xx/5xx) scenarios.
 
 **Alternate Flow 1: Invalid Excel Structure**
 - Step 7a: Excel missing required `[API]endpoint` column

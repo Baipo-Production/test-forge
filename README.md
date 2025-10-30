@@ -454,6 +454,7 @@ workspace/
 - ✅ Only creates variables when data exists (no empty dictionaries)
 - ✅ Uses `json=` parameter for request bodies
 - ✅ Logs complete request and response details with `console=yes` for visibility
+- ✅ **Accepts all HTTP status codes** with `expected_status=any` — prevents RequestsLibrary from raising HTTPError on 4xx/5xx responses, allowing tests to validate expected error codes properly
 
 ---
 
@@ -687,6 +688,19 @@ docker-compose up -d
 6. **Common issues:**
    - Missing base URL → Check that `[API]endpoint` contains full URL in first row
    - Variable not found errors → Ensure compile service only creates variables when data exists
+   - **HTTPError on expected error codes** → Fixed! All generated tests now use `expected_status=any` to accept any HTTP status code (200, 400, 500, etc.) and validate it properly with assertions
+
+**Example Generated Test Case:**
+```robot
+*** Test Cases ***
+TC_044
+    ${headers}=    Create Dictionary    x-mock-status=400
+    ${payload}=    Create Dictionary    Gender=Female    Age=18-30
+    ${resp}=    POST On Session    api    /api/combination-data    headers=${headers}    json=${payload}    expected_status=any
+    Should Be Equal As Integers    ${resp.status_code}    400
+```
+
+The `expected_status=any` parameter ensures that RequestsLibrary does not raise an exception when the API returns error status codes (4xx, 5xx), allowing the test to proceed and validate the actual status code.
 
 ---
 

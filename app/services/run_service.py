@@ -79,14 +79,9 @@ async def run_robot_streaming(gen_dir: Path, report_dir: Path) -> AsyncGenerator
                 # Map to event type
                 event_type = status.lower()  # 'pass', 'fail', or 'skip'
                 
-                # For FAIL status, try to get detailed error from output.xml
+                # Use console message directly during streaming
+                # Note: Don't try to parse output.xml here - it's incomplete while robot is running
                 message = console_message if console_message else f'Test {status.lower()}'
-                if status == 'FAIL' and output_xml_path.exists():
-                    # Wait a moment for file to be written
-                    await asyncio.sleep(0.1)
-                    detailed_message = get_test_error_details(output_xml_path, case_name)
-                    if detailed_message:
-                        message = detailed_message
                 
                 yield {
                     'type': event_type,
@@ -138,11 +133,13 @@ def parse_output_xml(xml_path: Path) -> Dict[str, int]:
     """
     if not xml_path.exists():
         return {'total': 0, 'passed': 0, 'failed': 0, 'skipped': 0}
-    
+
+    # Try to parse the XML with a few retries to handle the case where Robot
+    # Framework is still writing the file and it's temporarily empty/incomplete.
     try:
-        tree = ET.parse(xml_path)
+        tree = _load_xml_with_retries(xml_path)
         root = tree.getroot()
-        
+
         # Find <statistics> -> <total> -> <stat>
         stats = root.find('.//statistics/total/stat')
         if stats is not None:
@@ -153,9 +150,11 @@ def parse_output_xml(xml_path: Path) -> Dict[str, int]:
                 'failed': int(stats.get('fail', 0)),
                 'skipped': int(stats.get('skip', 0))
             }
+    except ET.ParseError as e:
+        print(f"Error parsing output.xml (parse error) {xml_path}: {e}")
     except Exception as e:
         print(f"Error parsing output.xml: {e}")
-    
+
     return {'total': 0, 'passed': 0, 'failed': 0, 'skipped': 0}
 
 
@@ -174,9 +173,9 @@ def get_test_error_details(xml_path: Path, test_name: str) -> str:
     """
     if not xml_path.exists():
         return ""
-    
+
     try:
-        tree = ET.parse(xml_path)
+        tree = _load_xml_with_retries(xml_path)
         root = tree.getroot()
         
         # Find the test case by name
@@ -206,10 +205,91 @@ def get_test_error_details(xml_path: Path, test_name: str) -> str:
                 
                 break
     
+    except ET.ParseError as e:
+        print(f"Error extracting test details from output.xml (parse error): {e}")
     except Exception as e:
         print(f"Error extracting test details from output.xml: {e}")
     
     return ""
+
+
+def _load_xml_with_retries(xml_path: Path, retries: int = 20, delay: float = 0.2) -> ET.ElementTree:
+    """
+    Helper to parse an XML file with retries to handle transient incomplete writes.
+
+    The function checks that the file is non-empty, contains an XML declaration at the
+    head and a closing </robot> tag near the tail before attempting to parse. This
+    prevents attempting to parse while Robot Framework is still writing the file.
+
+    Raises ET.ParseError if unable to parse after retries.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(1, retries + 1):
+        try:
+            try:
+                st = xml_path.stat()
+                size = st.st_size
+            except FileNotFoundError:
+                # File not yet created
+                last_exc = ET.ParseError("File not found")
+                print(f"[parse retry {attempt}/{retries}] output.xml not found yet")
+                time.sleep(delay)
+                continue
+
+            if size == 0:
+                last_exc = ET.ParseError("Empty file")
+                print(f"[parse retry {attempt}/{retries}] output.xml is empty (size=0)")
+                time.sleep(delay)
+                continue
+
+            # Read a small head and tail to check for XML start and closing tag
+            head = b""
+            tail = b""
+            try:
+                with xml_path.open('rb') as fh:
+                    head = fh.read(256)
+                    # Seek to near the end for tail check
+                    if size > 4096:
+                        fh.seek(max(0, size - 4096))
+                    else:
+                        fh.seek(0)
+                    tail = fh.read()
+            except Exception as e:
+                last_exc = e
+                print(f"[parse retry {attempt}/{retries}] could not read file head/tail: {e}")
+                time.sleep(delay)
+                continue
+
+            if b'<?xml' not in head:
+                last_exc = ET.ParseError("Missing XML declaration")
+                print(f"[parse retry {attempt}/{retries}] output.xml missing XML declaration in head")
+                time.sleep(delay)
+                continue
+
+            if b'</robot>' not in tail:
+                last_exc = ET.ParseError("Missing closing </robot> tag")
+                print(f"[parse retry {attempt}/{retries}] output.xml missing closing </robot> in tail (size={size})")
+                time.sleep(delay)
+                continue
+
+            # Basic sanity checks passed, try parsing
+            return ET.parse(xml_path)
+
+        except ET.ParseError as e:
+            last_exc = e
+            print(f"[parse retry {attempt}/{retries}] ET.ParseError while parsing output.xml: {e}")
+            time.sleep(delay)
+            continue
+        except Exception as e:
+            last_exc = e
+            print(f"[parse retry {attempt}/{retries}] unexpected error while parsing output.xml: {e}")
+            time.sleep(delay)
+            continue
+
+    # After retries exhausted, raise last parse error
+    if last_exc:
+        raise last_exc
+    raise ET.ParseError("Unknown XML parse error after retries")
 
 
 def format_error_message(error_msg: str) -> str:

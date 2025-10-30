@@ -195,6 +195,10 @@ def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
         if body:
             call_parts.append(f"json=${'{'}payload{'}'}")
         
+        # Always add expected_status=any to prevent RequestsLibrary from raising HTTPError
+        # This allows the test to validate the actual status code instead
+        call_parts.append("expected_status=any")
+        
         lines.append("    " + "    ".join(call_parts))
         
         # Log API response details
