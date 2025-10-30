@@ -190,6 +190,8 @@ jobs:
 
       # 11. Action 5: Download test report
       - name: 📊 Action 5 - Download Test Report
+        id: download_report
+        continue-on-error: true
         run: |
           echo "=== Downloading test report ==="
           
@@ -198,21 +200,27 @@ jobs:
           
           if [ -n "$TIMESTAMP" ]; then
             DOWNLOAD_URL="http://localhost:3000/api/v1/download/$TEST_NAME/$TIMESTAMP"
-            ZIP_FILENAME="${TEST_NAME}_Report_${TIMESTAMP}.zip"
+            OUTPUT_FILE="${TEST_NAME}_Report_${TIMESTAMP}.zip"
+            echo "Downloading specific report: $TIMESTAMP"
           else
             DOWNLOAD_URL="http://localhost:3000/api/v1/download/$TEST_NAME"
-            ZIP_FILENAME="${TEST_NAME}_Report_latest.zip"
+            OUTPUT_FILE="${TEST_NAME}_Report_latest.zip"
+            echo "Downloading latest report"
           fi
           
-          echo "Downloading from: $DOWNLOAD_URL"
-          curl -v -OJ "$DOWNLOAD_URL" || echo "⚠️ Download may have failed, continuing..."
+          echo "URL: $DOWNLOAD_URL"
+          echo "Output file: $OUTPUT_FILE"
           
-          # Verify download
-          if ls ${TEST_NAME}_Report_*.zip 1> /dev/null 2>&1; then
-            echo "✅ Report downloaded successfully"
-            ls -lh ${TEST_NAME}_Report_*.zip
+          # Download with explicit output filename
+          HTTP_CODE=$(curl -w "%{http_code}" -o "$OUTPUT_FILE" "$DOWNLOAD_URL")
+          echo "HTTP Status: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Report downloaded successfully!"
+            ls -lh "$OUTPUT_FILE"
           else
-            echo "⚠️ Report file not found (may not exist yet)"
+            echo "⚠️ Download failed with status $HTTP_CODE (report may not exist yet)"
+            rm -f "$OUTPUT_FILE"
           fi
 
       # 12. Upload test artifacts
@@ -222,13 +230,10 @@ jobs:
         with:
           name: testforge-reports-${{ github.event.inputs.testName || 'github-action-test' }}
           path: |
-            example-combination-data.xlsx
-            combination_output.xlsx
-            filled_testdata.xlsx
-            compile_response.json
-            sse_output.log
-            *.zip
-            server.log
+            *.xlsx
+            *.json
+            *.log
+            *_Report_*.zip
           retention-days: 30
           if-no-files-found: warn
 
