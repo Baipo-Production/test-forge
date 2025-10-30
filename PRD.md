@@ -704,6 +704,212 @@ And response time is < 5 seconds
 
 ---
 
+### Special Value Handling (Sentinel Keywords)
+
+#### Overview
+TestForge supports sentinel keywords for comprehensive edge case and boundary testing. These keywords enable testers to explicitly specify null values, empty strings, empty arrays, and empty objects in their test data.
+
+#### Motivation
+**Problem:** Traditional CSV/Excel input cannot distinguish between:
+- Empty string (`""`)
+- JSON null (`null`)
+- Empty array (`[]`)
+- Empty object (`{}`)
+- Omitted field (not sent in request)
+
+**Solution:** Use special keywords that the system recognizes and converts appropriately.
+
+#### Supported Sentinel Keywords
+
+| Keyword | Generated Value | Robot Framework | JSON Output | Use Case |
+|---------|----------------|-----------------|-------------|----------|
+| `[EMPTY]` or `[EMPTY_STRING]` | `""` | `${EMPTY}` | `{"field": ""}` | Test empty string validation |
+| `[NULL]` | `None` | `${None}` | `{"field": null}` | Test null value handling |
+| `[EMPTY_ARRAY]` | `[]` | `@{EMPTY}` | `{"field": []}` | Test empty array handling |
+| `[EMPTY_OBJECT]` | `{}` | `&{EMPTY}` | `{"field": {}}` | Test empty object handling |
+| (blank cell) | Field omitted | Not included | `{}` | Field not sent at all |
+
+#### Request Body Examples
+
+**Excel Input:**
+```
+| [Request][Body]name | [Request][Body]email | [Request][Body]age | [Request][Body]tags | [Request][Body]meta |
+|---------------------|---------------------|-------------------|---------------------|---------------------|
+| [EMPTY]             | user@test.com       | [NULL]            | [EMPTY_ARRAY]       | [EMPTY_OBJECT]      |
+| John Doe            |                     | 25                |                     |                     |
+```
+
+**Generated Test Case 1 (Robot Framework):**
+```robot
+*** Test Cases ***
+TC_001
+    ${payload}=    Create Dictionary    name=${EMPTY}    email=user@test.com    age=${None}    tags=@{EMPTY}    meta=&{EMPTY}
+    ${resp}=    POST On Session    api    /users    json=${payload}    expected_status=any
+```
+
+**Generated JSON Request 1:**
+```json
+{
+  "name": "",
+  "email": "user@test.com",
+  "age": null,
+  "tags": [],
+  "meta": {}
+}
+```
+
+**Generated Test Case 2 (Robot Framework):**
+```robot
+*** Test Cases ***
+TC_002
+    ${payload}=    Create Dictionary    name=John Doe    age=25
+    ${resp}=    POST On Session    api    /users    json=${payload}    expected_status=any
+```
+
+**Generated JSON Request 2:**
+```json
+{
+  "name": "John Doe",
+  "age": 25
+}
+```
+→ Note: `email`, `tags`, `meta` omitted (blank cells)
+
+#### Response Validation with Type Operators
+
+TestForge provides type and structure validation operators for response assertions:
+
+**Type Validation Operators:**
+
+| Operator | Description | Example Usage |
+|----------|-------------|---------------|
+| `:is_null` | Field value is `null` | `[Response][Body]error:is_null` with value `true` |
+| `:is_not_null` | Field value is not `null` | `[Response][Body]data:is_not_null` with value `true` |
+| `:is_empty` | String/array/object is empty | `[Response][Body]items:is_empty` with value `true` |
+| `:is_not_empty` | String/array/object is not empty | `[Response][Body]name:is_not_empty` with value `true` |
+| `:is_array` | Field is JSON array | `[Response][Body]tags:is_array` with value `true` |
+| `:is_object` | Field is JSON object | `[Response][Body]meta:is_object` with value `true` |
+| `:is_string` | Field is string type | `[Response][Body]name:is_string` with value `true` |
+| `:is_number` | Field is number type | `[Response][Body]age:is_number` with value `true` |
+| `:is_bool` | Field is boolean type | `[Response][Body]active:is_bool` with value `true` |
+
+**Response Validation Examples:**
+
+**Excel Input:**
+```
+| [Response][Body]error:is_null | [Response][Body]items:is_empty | [Response][Body]data.user:is_not_null | [Response][Body]tags:is_array |
+|-------------------------------|-------------------------------|---------------------------------------|------------------------------|
+| true                          | true                          | true                                  | true                         |
+```
+
+**Generated Robot Framework Assertions:**
+```robot
+# Validate error is null
+${value}=    Get Value From Json    ${json}    $.error
+Should Be Equal    ${value[0]}    ${None}
+
+# Validate items is empty
+${value}=    Get Value From Json    ${json}    $.items
+Should Be Empty    ${value[0]}
+
+# Validate data.user is not null
+${value}=    Get Value From Json    ${json}    $.data.user
+Should Not Be Equal    ${value[0]}    ${None}
+
+# Validate tags is array
+${value}=    Get Value From Json    ${json}    $.tags
+Should Be True    isinstance(${value[0]}, list)
+```
+
+#### Nested Null Values
+
+**Excel Input:**
+```
+| [Request][Body]user.name | [Request][Body]user.address.street | [Request][Body]user.address.city |
+|--------------------------|-------------------------------------|----------------------------------|
+| John                     | [NULL]                              | Bangkok                          |
+```
+
+**Generated JSON:**
+```json
+{
+  "user": {
+    "name": "John",
+    "address": {
+      "street": null,
+      "city": "Bangkok"
+    }
+  }
+}
+```
+
+#### Validation Rules
+
+**Data Processing:**
+1. Sentinel keywords are case-insensitive: `[NULL]` = `[null]` = `[Null]`
+2. Keywords must be exact match (no partial matching)
+3. Processing order:
+   - Detect sentinel keyword → convert to special value
+   - If blank cell → return `None` (omit field)
+   - Otherwise → apply normal type conversion
+
+**Robot Framework Generation:**
+- Empty string → `${EMPTY}`
+- Null → `${None}`
+- Empty array → `@{EMPTY}`
+- Empty object → `&{EMPTY}`
+- Omitted field → not included in `Create Dictionary`
+
+**Response Validation:**
+- Type operators (`:is_null`, `:is_empty`, etc.) expect boolean value (`true`/`false`)
+- `is_empty` works for strings, arrays, and objects
+- Type checks use Python's `isinstance()` function
+
+#### Acceptance Criteria
+
+```gherkin
+# Scenario 1: Send Empty String
+Given Excel cell [Request][Body]name contains "[EMPTY]"
+When system compiles test case
+Then Robot file contains "name=${EMPTY}"
+And generated JSON request contains {"name": ""}
+
+# Scenario 2: Send Null Value
+Given Excel cell [Request][Body]age contains "[NULL]"
+When system compiles test case
+Then Robot file contains "age=${None}"
+And generated JSON request contains {"age": null}
+
+# Scenario 3: Send Empty Array
+Given Excel cell [Request][Body]tags contains "[EMPTY_ARRAY]"
+When system compiles test case
+Then Robot file contains "tags=@{EMPTY}"
+And generated JSON request contains {"tags": []}
+
+# Scenario 4: Omit Field
+Given Excel cell [Request][Body]email is blank
+When system compiles test case
+Then Robot file does NOT include "email" in Create Dictionary
+And generated JSON request does NOT contain "email" field
+
+# Scenario 5: Validate Null Response
+Given Excel cell [Response][Body]error:is_null contains "true"
+When system compiles test case
+Then Robot file contains "Should Be Equal    ${value[0]}    ${None}"
+
+# Scenario 6: Validate Empty Array
+Given Excel cell [Response][Body]items:is_empty contains "true"
+When system compiles test case
+Then Robot file contains "Should Be Empty    ${value[0]}"
+
+# Scenario 7: Validate Type is Array
+Given Excel cell [Response][Body]tags:is_array contains "true"
+When system compiles test case
+Then Robot file contains "Should Be True    isinstance(${value[0]}, list)"
+```
+
+---
+
 ### 0. Download Example Template
 
 #### Endpoint

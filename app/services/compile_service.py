@@ -33,6 +33,16 @@ ASSERTION_OPERATORS = {
     "contains": "contains",  # Substring present
     "regex": "regex",     # Regular expression match
     "between": "between", # Numeric range (low,high)
+    # Type and structure validation
+    "is_null": "is_null",         # Field is null
+    "is_not_null": "is_not_null", # Field is not null
+    "is_empty": "is_empty",       # String/array/object is empty
+    "is_not_empty": "is_not_empty", # String/array/object is not empty
+    "is_array": "is_array",       # Field is array
+    "is_object": "is_object",     # Field is object
+    "is_string": "is_string",     # Field is string
+    "is_number": "is_number",     # Field is number
+    "is_bool": "is_bool",         # Field is boolean
 }
 
 def parse_field_meta(raw: str):
@@ -111,6 +121,52 @@ def parse_assertion(field_key: str, expected_raw: str):
     field, op, _ = parse_field_meta(field_key)
     return field, op, expected_raw
 
+def format_robot_value(value):
+    """
+    Format Python value to Robot Framework syntax.
+    
+    Handles:
+        None → ${None}
+        "" → ${EMPTY}
+        [] → @{EMPTY}
+        {} → &{EMPTY}
+        True/False → ${True}/${False}
+        Numbers → as-is
+        Strings → quoted if contains spaces
+    
+    Args:
+        value: Python value to format
+    
+    Returns:
+        str: Robot Framework formatted value
+    """
+    if value is None:
+        return "${None}"
+    if value == "":
+        return "${EMPTY}"
+    if isinstance(value, list):
+        if len(value) == 0:
+            return "@{EMPTY}"
+        # For non-empty lists, convert to Robot list syntax
+        items = "    ".join([format_robot_value(item) for item in value])
+        return f"[{items}]"  # Note: May need Create List keyword for complex cases
+    if isinstance(value, dict):
+        if len(value) == 0:
+            return "&{EMPTY}"
+        # For non-empty dicts, we'll need Create Dictionary
+        # This is handled in the calling code
+        return value
+    if isinstance(value, bool):
+        return "${True}" if value else "${False}"
+    if isinstance(value, (int, float)):
+        return str(value)
+    # String value
+    s = str(value)
+    # Quote if contains spaces or special chars
+    if " " in s or any(c in s for c in ["$", "{", "}", "@", "&"]):
+        return f'"{s}"'
+    return s
+
 def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
     df = pd.read_excel(excel_path, sheet_name=0, dtype=str).fillna("")
     tests = []
@@ -155,10 +211,42 @@ def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
                 expected_header[key] = (v, dtype)
         
         # Extract request data
-        body = {k.replace("[Request][Body]", ""): v for k, v in row.items() if k.startswith("[Request][Body]") and v}
-        headers = {k.replace("[Request][Header]", ""): v for k, v in row.items() if k.startswith("[Request][Header]") and v}
-        params = {k.replace("[Request][Params]", ""): v for k, v in row.items() if k.startswith("[Request][Params]") and v}
-        query = {k.replace("[Request][Query]", ""): v for k, v in row.items() if k.startswith("[Request][Query]") and v}
+        # Support sentinel values: [EMPTY], [NULL], [EMPTY_ARRAY], [EMPTY_OBJECT]
+        # Note: normalize_cell() already converts these to "", None, [], {}
+        body = {}
+        for k, v in row.items():
+            if k.startswith("[Request][Body]"):
+                field = k.replace("[Request][Body]", "")
+                # Include field if:
+                # 1. v is explicitly "" (empty string sentinel)
+                # 2. v is explicitly [] (empty array sentinel)
+                # 3. v is explicitly {} (empty object sentinel)
+                # 4. v has actual content
+                # Skip only if v is None (which means blank cell or [NULL])
+                if v is not None or str(row.get(k, "")).strip().upper() == "[NULL]":
+                    body[field] = v
+        
+        headers = {}
+        for k, v in row.items():
+            if k.startswith("[Request][Header]"):
+                field = k.replace("[Request][Header]", "")
+                if v is not None or str(row.get(k, "")).strip().upper() == "[NULL]":
+                    headers[field] = v
+        
+        params = {}
+        for k, v in row.items():
+            if k.startswith("[Request][Params]"):
+                field = k.replace("[Request][Params]", "")
+                if v is not None or str(row.get(k, "")).strip().upper() == "[NULL]":
+                    params[field] = v
+        
+        query = {}
+        for k, v in row.items():
+            if k.startswith("[Request][Query]"):
+                field = k.replace("[Request][Query]", "")
+                if v is not None or str(row.get(k, "")).strip().upper() == "[NULL]":
+                    query[field] = v
+
 
         lines = [ROBOT_HEADER.format(base_url=base_url)]
         lines.append(f"{tc_name}")
@@ -168,21 +256,21 @@ def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
         lines.append(f"    Log    Method: {method}    console=yes")
         lines.append(f"    Log    Endpoint: {endpoint}    console=yes")
         
-        # Build request parameters - use Create Dictionary only if there's data
+        # Build request parameters - use Create Dictionary with proper value formatting
         if headers:
-            dict_str = "    ".join([f"{k}={v}" for k, v in headers.items()])
+            dict_str = "    ".join([f"{k}={format_robot_value(v)}" for k, v in headers.items()])
             lines.append(f"    ${'{'}headers{'}'}=    Create Dictionary    {dict_str}")
             lines.append(f"    Log    Headers: ${'{'}headers{'}'}    console=yes")
         if params:
-            dict_str = "    ".join([f"{k}={v}" for k, v in params.items()])
+            dict_str = "    ".join([f"{k}={format_robot_value(v)}" for k, v in params.items()])
             lines.append(f"    ${'{'}params{'}'}=    Create Dictionary    {dict_str}")
             lines.append(f"    Log    Params: ${'{'}params{'}'}    console=yes")
         if query:
-            dict_str = "    ".join([f"{k}={v}" for k, v in query.items()])
+            dict_str = "    ".join([f"{k}={format_robot_value(v)}" for k, v in query.items()])
             lines.append(f"    ${'{'}query{'}'}=    Create Dictionary    {dict_str}")
             lines.append(f"    Log    Query: ${'{'}query{'}'}    console=yes")
         if body:
-            dict_str = "    ".join([f"{k}={v}" for k, v in body.items()])
+            dict_str = "    ".join([f"{k}={format_robot_value(v)}" for k, v in body.items()])
             lines.append(f"    ${'{'}payload{'}'}=    Create Dictionary    {dict_str}")
             lines.append(f"    Log    Body: ${'{'}payload{'}'}    console=yes")
         
@@ -237,12 +325,41 @@ def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
                 # Get value from JSON
                 lines.append(f"    ${'{'}value{'}'}=    Get Value From Json    ${'{'}json{'}'}    $.{field_name}")
                 
-                # Convert to number for numeric comparisons
-                if op in ("gt", "lt", "between"):
+                # Type and structure validation operators
+                if op == "is_null":
+                    lines.append(f"    Should Be Equal    ${'{'}value[0]{'}'}    ${'{'}None{'}'}")
+                elif op == "is_not_null":
+                    lines.append(f"    Should Not Be Equal    ${'{'}value[0]{'}'}    ${'{'}None{'}'}")
+                elif op == "is_empty":
+                    # Works for strings, arrays, objects
+                    lines.append(f"    Should Be Empty    ${'{'}value[0]{'}'}")
+                elif op == "is_not_empty":
+                    lines.append(f"    Should Not Be Empty    ${'{'}value[0]{'}'}")
+                elif op == "is_array":
+                    lines.append(f"    Should Be True    isinstance(${'{'}value[0]{'}'}, list)")
+                elif op == "is_object":
+                    lines.append(f"    Should Be True    isinstance(${'{'}value[0]{'}'}, dict)")
+                elif op == "is_string":
+                    lines.append(f"    Should Be True    isinstance(${'{'}value[0]{'}'}, str)")
+                elif op == "is_number":
+                    lines.append(f"    Should Be True    isinstance(${'{'}value[0]{'}'}, (int, float))")
+                elif op == "is_bool":
+                    lines.append(f"    Should Be True    isinstance(${'{'}value[0]{'}'}, bool)")
+                # Numeric comparison operators
+                elif op in ("gt", "lt", "between"):
                     lines.append(f"    ${'{'}num{'}'}=    Convert To Number    ${'{'}value[0]{'}'}")
-                
-                # Apply assertion based on operator
-                if op == "eq":
+                    if op == "gt":
+                        lines.append(f"    Should Be True    ${'{'}num{'}'} > {expected_value}")
+                    elif op == "lt":
+                        lines.append(f"    Should Be True    ${'{'}num{'}'} < {expected_value}")
+                    elif op == "between":
+                        # Expected format: "low,high" or "low:high" or "low;high"
+                        bounds = [b.strip() for b in re.split(r'[,;:]', str(expected_value_raw)) if b.strip()]
+                        low = cast_value(bounds[0], dtype) if len(bounds) > 0 else 0
+                        high = cast_value(bounds[1], dtype) if len(bounds) > 1 else low
+                        lines.append(f"    Should Be True    ${'{'}num{'}'} >= {low} and ${'{'}num{'}'} <= {high}")
+                # Value comparison operators
+                elif op == "eq":
                     if dtype in ("int", "integer"):
                         lines.append(f"    Should Be Equal As Integers    ${'{'}value[0]{'}'}    {expected_value}")
                     elif dtype in ("float", "double", "number"):
@@ -254,20 +371,10 @@ def generate_robot_cases_from_excel(excel_path: Path, gen_dir: Path):
                         lines.append(f"    Should Be Equal    ${'{'}value[0]{'}'}    {expected_value}")
                 elif op == "ne":
                     lines.append(f"    Should Not Be Equal    ${'{'}value[0]{'}'}    {expected_value}")
-                elif op == "gt":
-                    lines.append(f"    Should Be True    ${'{'}num{'}'} > {expected_value}")
-                elif op == "lt":
-                    lines.append(f"    Should Be True    ${'{'}num{'}'} < {expected_value}")
                 elif op == "contains":
                     lines.append(f"    Should Contain    ${'{'}value[0]{'}'}    {expected_value}")
                 elif op == "regex":
                     lines.append(f"    Should Match Regexp    ${'{'}value[0]{'}'}    {expected_value}")
-                elif op == "between":
-                    # Expected format: "low,high" or "low:high" or "low;high"
-                    bounds = [b.strip() for b in re.split(r'[,;:]', str(expected_value_raw)) if b.strip()]
-                    low = cast_value(bounds[0], dtype) if len(bounds) > 0 else 0
-                    high = cast_value(bounds[1], dtype) if len(bounds) > 1 else low
-                    lines.append(f"    Should Be True    ${'{'}num{'}'} >= {low} and ${'{'}num{'}'} <= {high}")
                 else:
                     # Fallback to equality
                     lines.append(f"    Should Be Equal    ${'{'}value[0]{'}'}    {expected_value}")

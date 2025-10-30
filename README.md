@@ -369,13 +369,28 @@ curl -OJ http://localhost:3000/api/v1/download/example-combination-data
   - `[Response][Header]<name>` - Expected response headers
 
 **Supported Assertion Operators:**
+
+**Comparison Operators:**
 - `eq` (default) — Exact equality check
 - `ne` — Not equal
 - `gt` — Greater than (numeric)
 - `lt` — Less than (numeric)
+- `between` — Numeric range check; use cell value like `low,high` (e.g., `50,80`)
+
+**String Operators:**
 - `contains` — Substring present
 - `regex` — Regular expression match
-- `between` — Numeric range check; use cell value like `low,high` (e.g., `50,80`)
+
+**Type & Structure Validation:**
+- `is_null` — Field value is `null`
+- `is_not_null` — Field value is not `null`
+- `is_empty` — String/array/object is empty (`""`, `[]`, `{}`)
+- `is_not_empty` — String/array/object is not empty
+- `is_array` — Field is a JSON array
+- `is_object` — Field is a JSON object
+- `is_string` — Field is a string
+- `is_number` — Field is a number
+- `is_bool` — Field is a boolean
 
 **Supported Data Types (optional):**
 - `[Type:int]` or `[Type:integer]` — Integer numbers
@@ -383,13 +398,61 @@ curl -OJ http://localhost:3000/api/v1/download/example-combination-data
 - `[Type:bool]` or `[Type:boolean]` — Boolean values (true/false)
 - `[Type:string]` — String values (default)
 
-**Examples:**
+**Sentinel Keywords (Special Values):**
+
+TestForge supports special keywords for edge case testing:
+
+| Keyword | Generated Value | Use Case |
+|---------|----------------|----------|
+| `[EMPTY]` or `[EMPTY_STRING]` | `""` | Send empty string explicitly |
+| `[NULL]` | `null` | Send JSON null value |
+| `[EMPTY_ARRAY]` | `[]` | Send empty array |
+| `[EMPTY_OBJECT]` | `{}` | Send empty object |
+| (blank cell) | field omitted | Don't send field at all |
+
+**Sentinel Keyword Examples:**
+
+*Request Examples:*
+```excel
+| [Request][Body]name | [Request][Body]age | [Request][Body]tags | [Request][Body]meta |
+|---------------------|-------------------|---------------------|---------------------|
+| [EMPTY]             | [NULL]            | [EMPTY_ARRAY]       | [EMPTY_OBJECT]      |
+```
+→ Generates request body:
+```json
+{
+  "name": "",
+  "age": null,
+  "tags": [],
+  "meta": {}
+}
+```
+
+*Response Validation Examples:*
+```excel
+| [Response][Body]error:is_null | [Response][Body]items:is_empty | [Response][Body]data:is_not_null |
+|-------------------------------|-------------------------------|----------------------------------|
+| true                          | true                          | true                             |
+```
+→ Validates:
+- `error` field is `null`
+- `items` array is empty `[]`
+- `data` field exists and is not `null`
+
+**Basic Examples:**
 - `[Response][Body]id` with value `123` → equality check (string)
 - `[Response][Body]age:gt[Type:int]` with value `18` → checks age > 18 (integer)
 - `[Response][Body]score:between[Type:float]` with value `50.5,80.9` → checks 50.5 ≤ score ≤ 80.9
 - `[Response][Body]active[Type:bool]` with value `true` → checks boolean equality
 - `[Response][Body]name:contains` with value `John` → checks if name contains "John"
 - `[Response][Header]Content-Type:regex` with value `^application/json` → regex match
+
+**Advanced Examples:**
+- `[Request][Body]email` with `[EMPTY]` → sends `{"email": ""}`
+- `[Request][Body]address` with `[NULL]` → sends `{"address": null}`
+- `[Response][Body]profile.address:is_null` with `true` → validates nested null value
+- `[Response][Body]items:is_array` with `true` → validates field is array
+- `[Response][Body]metadata:is_empty` with `true` → validates empty object/string/array
 
 ---
 

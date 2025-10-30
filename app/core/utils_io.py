@@ -8,16 +8,53 @@ def read_table(content: bytes, filename: str) -> pd.DataFrame:
     return pd.read_excel(io.BytesIO(content), dtype=str).fillna("")
 
 def normalize_cell(v: Any):
-    if v is None: return None
+    """
+    Normalize cell value with support for sentinel keywords.
+    
+    Sentinel Keywords:
+        [EMPTY] or [EMPTY_STRING] → "" (empty string)
+        [NULL] → None (JSON null)
+        [EMPTY_ARRAY] → [] (empty array)
+        [EMPTY_OBJECT] → {} (empty object)
+        (blank cell) → None (omit field)
+    
+    Returns:
+        Normalized value or sentinel value
+    """
+    if v is None: 
+        return None
+    
     s = str(v).strip()
-    if s == "": return None
-    if s.lower() == "true": return True
-    if s.lower() == "false": return False
+    
+    # Sentinel values (case-insensitive)
+    s_upper = s.upper()
+    if s_upper in ("[EMPTY]", "[EMPTY_STRING]"):
+        return ""  # Explicit empty string
+    if s_upper == "[NULL]":
+        return None  # JSON null
+    if s_upper == "[EMPTY_ARRAY]":
+        return []  # Empty array
+    if s_upper == "[EMPTY_OBJECT]":
+        return {}  # Empty object
+    
+    # Blank cell = omit field
+    if s == "": 
+        return None
+    
+    # Boolean conversion
+    if s.lower() == "true": 
+        return True
+    if s.lower() == "false": 
+        return False
+    
+    # Numeric conversion
     try:
         if s.isdigit() or (s.startswith("-") and s[1:].isdigit()):
             return int(s)
-        f = float(s); return f
-    except: return s
+        f = float(s)
+        return f
+    except: 
+        return s
 
 def tokenize_body_path(path: str):
     parts = []
