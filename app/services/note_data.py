@@ -48,6 +48,7 @@ def get_note_data() -> Dict[str, List[str]]:
             "Assertion Operators - Structure Validation",
             "Assertion Operators - Structure Validation",
             "Assertion Operators - Structure Validation",
+            "Assertion Operators - Structure Validation",
             "Data Types",
             "Data Types",
             "Data Types",

@@ -14,22 +14,51 @@ EXPECTED_PREFIXES = (
 )
 
 def build_combination_excel(content: bytes, filename: str) -> bytes:
-    df = U.read_table(content, filename)
+    df = U.read_table(content, filename, allow_different_lengths=True)
     headers = [str(h).strip() for h in list(df.columns)]
     rows = df.values.tolist()
 
-    # collect values per column (ignore empty)
+    # Identify metadata vs parameter columns
+    metadata_prefixes = ('[API]endpoint', '[API]Method', '[API]method')
+    metadata_indices = []
+    parameter_indices = []
+    
+    for i, h in enumerate(headers):
+        is_metadata = any(h.lower().startswith(prefix.lower()) for prefix in metadata_prefixes)
+        if is_metadata:
+            metadata_indices.append(i)
+        else:
+            parameter_indices.append(i)
+    
+    # Collect values per column (ignore empty)
     per_col = [[] for _ in headers]
+    metadata_values = {}  # Store single metadata value per column
+    
     for r in rows:
         for i, _h in enumerate(headers):
             v = U.normalize_cell(r[i] if i < len(r) else None)
             if v is not None:
-                per_col[i].append(v)
-    # empty column -> [None]
-    for i in range(len(per_col)):
+                if i in metadata_indices:
+                    # Metadata: keep only first non-empty value
+                    if i not in metadata_values:
+                        metadata_values[i] = v
+                else:
+                    # Parameter: collect all values for combinations
+                    per_col[i].append(v)
+    
+    # Set metadata columns to single value (will be broadcast)
+    for i in metadata_indices:
+        if i in metadata_values:
+            per_col[i] = [metadata_values[i]]
+        else:
+            per_col[i] = [None]
+    
+    # Empty parameter column -> [None]
+    for i in parameter_indices:
         if not per_col[i]:
             per_col[i] = [None]
 
+    # Generate combinations
     combos = U.cartesian_product(per_col)
     out_rows: List[List[Any]] = []
     for combo in combos:
